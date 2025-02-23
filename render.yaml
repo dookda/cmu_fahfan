@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: my-node-server
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
