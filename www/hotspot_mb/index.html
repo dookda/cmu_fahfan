@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>จุดความร้อน</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+</head>
+
+<style>
+    #menu {
+        position: absolute;
+        background: #efefef;
+        padding: 10px;
+        font-family: 'Open Sans', sans-serif;
+        opacity: 0.75;
+    }
+</style>
+
+<body style="margin: 0px; padding: 0px;">
+    <div id="map" style="position: absolute; top: 0px; bottom: 0px; width: 100%;"></div>
+    <div id="menu">
+        <input id="satellite-streets-v12" type="radio" name="rtoggle" value="satellite">
+        <!-- See a list of Mapbox-hosted public styles at -->
+        <!-- https://docs.mapbox.com/api/maps/styles/#mapbox-styles -->
+        <label for="satellite-streets-v12">satellite</label>
+        <input id="light-v11" type="radio" name="rtoggle" value="light">
+        <label for="light-v11">light</label>
+        <input id="dark-v11" type="radio" name="rtoggle" value="dark">
+        <label for="dark-v11">dark</label>
+        <input id="standard" type="radio" name="rtoggle" value="streets" checked>
+        <label for="streets-v12">streets</label>
+        <!-- <input id="outdoors-v12" type="radio" name="rtoggle" value="outdoors">
+        <label for="outdoors-v12">outdoors</label> -->
+    </div>
+
+    <script>
+        mapboxgl.accessToken = "pk.eyJ1IjoiZG9va2RhIiwiYSI6ImNsZmxvenZsYzAzY3IzcW1tZmRyNTZiZDkifQ.m2CpYfFxxSZ0QriDK7s7Dw";
+        const map = new mapboxgl.Map({
+            container: "map",
+            style: 'mapbox://styles/mapbox/standard',
+            zoom: 5,
+            center: [100, 17],
+            pitch: 45
+        });
+
+        // Radio buttons for changing the map style
+        const layerList = document.getElementById('menu');
+        const inputs = layerList.getElementsByTagName('input');
+
+        for (const input of inputs) {
+            input.onclick = (layer) => {
+                const layerId = layer.target.id;
+                map.setStyle('mapbox://styles/mapbox/' + layerId);
+            };
+        }
+
+        // Add zoom and rotation controls to the map
+        let nav = new mapboxgl.NavigationControl({
+            showCompass: true,
+            showZoom: true,
+            visualizePitch: true
+        })
+        map.addControl(nav, 'bottom-right');
+
+        // Add geolocate control to the map
+        let gps = new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true
+            },
+            trackUserLocation: true,
+            showAccuracyCircle: true,
+            showUserLocation: true
+        });
+        map.addControl(gps, 'bottom-right');
+
+
+
+        // RainViewer integration
+        function addHotspotLayer() {
+            fetch("https://firms.modaps.eosdis.nasa.gov/mapserver/wfs/SouthEast_Asia/c56f7d70bc06160e3c443a592fd9c87e/?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&TYPENAME=ms:fires_snpp_24hrs&STARTINDEX=0&COUNT=10000&SRSNAME=urn:ogc:def:crs:EPSG::4326&BBOX=-90,-180,90,180,urn:ogc:def:crs:EPSG::4326&outputformat=geojson")
+                .then(res => res.json())
+                .then(apiData => {
+                    map.addSource('hotspot', {
+                        type: 'geojson',
+                        data: apiData,
+                    });
+
+                    map.addLayer({
+                        id: 'hotspot-point',
+                        type: 'circle',
+                        source: 'hotspot',
+                        // minzoom: 8,
+                        layout: {},
+                        paint: {
+                            'circle-radius': 5,
+                            'circle-color': '#fc0303'
+                        },
+                    });
+
+                    // Add click event to the layer
+                    map.on('click', 'hotspot-point', function (e) {
+                        while (Math.abs(e.lngLat.lng - e.features[0].geometry.coordinates[0]) > 180) {
+                            e.lngLat.lng += e.lngLat.lng > e.features[0].geometry.coordinates[0] ? -360 : 360;
+                        }
+
+                        new mapboxgl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setHTML(`พิกัด: ${JSON.stringify(e.features[0].properties.latitude)}, ${JSON.stringify(e.features[0].properties.longitude)}<br>
+                                       ค่า Brightness:  ${JSON.stringify(e.features[0].properties.brightness)} K<br>
+                                       ค่า Fire Radiative Power:  ${JSON.stringify(e.features[0].properties.frp)} MW<br>
+                                       วัน/เวลา: ${JSON.stringify(e.features[0].properties.acq_datetime)}<br>`)
+                            .addTo(map);
+                    });
+
+                    // Change the cursor to a pointer when the mouse is over the clusters layer.
+                    map.on('mouseenter', 'hotspot-point', function () {
+                        map.getCanvas().style.cursor = 'pointer';
+                    });
+
+                    // Change it back to a pointer when it leaves.
+                    map.on('mouseleave', 'hotspot-point', function () {
+                        map.getCanvas().style.cursor = '';
+                    });
+                })
+                .catch(console.error);
+        }
+
+        map.on('load', () => {
+            // gps.trigger();
+        });
+
+        map.on('style.load', addHotspotLayer);
+
+
+
+    </script>
+</body>
+
+</html>

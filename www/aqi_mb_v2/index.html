@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>คุณภาพอากาศ</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+</head>
+
+<style>
+    #menu {
+        position: absolute;
+        background: #efefef;
+        padding: 10px;
+        font-family: 'Open Sans', sans-serif;
+        opacity: 0.75;
+    }
+</style>
+
+<body style="margin: 0px; padding: 0px;">
+    <div id="map" style="position: absolute; top: 0px; bottom: 0px; width: 100%;"></div>
+    <div id="menu">
+        <input id="satellite-streets-v12" type="radio" name="rtoggle" value="satellite" checked="checked">
+        <!-- See a list of Mapbox-hosted public styles at -->
+        <!-- https://docs.mapbox.com/api/maps/styles/#mapbox-styles -->
+        <label for="satellite-streets-v12">satellite</label>
+        <input id="light-v11" type="radio" name="rtoggle" value="light">
+        <label for="light-v11">light</label>
+        <input id="dark-v11" type="radio" name="rtoggle" value="dark" checked>
+        <label for="dark-v11">dark</label>
+        <input id="streets-v12" type="radio" name="rtoggle" value="streets">
+        <label for="streets-v12">streets</label>
+        <!-- <input id="outdoors-v12" type="radio" name="rtoggle" value="outdoors">
+        <label for="outdoors-v12">outdoors</label> -->
+    </div>
+
+    <script>
+        mapboxgl.accessToken = "pk.eyJ1IjoiZG9va2RhIiwiYSI6ImNsZmxvenZsYzAzY3IzcW1tZmRyNTZiZDkifQ.m2CpYfFxxSZ0QriDK7s7Dw";
+        const map = new mapboxgl.Map({
+            container: "map",
+            style: 'mapbox://styles/mapbox/dark-v11', // Choose one style
+            zoom: 6,
+            center: [100, 17],
+            pitch: 45
+        });
+
+        // Radio buttons for changing the map style
+        const layerList = document.getElementById('menu');
+        const inputs = layerList.getElementsByTagName('input');
+
+        for (const input of inputs) {
+            input.onclick = (layer) => {
+                const layerId = layer.target.id;
+                map.setStyle('mapbox://styles/mapbox/' + layerId);
+            };
+        }
+
+        // Add zoom and rotation controls to the map
+        let nav = new mapboxgl.NavigationControl({
+            showCompass: true,
+            showZoom: true,
+            visualizePitch: true
+        })
+        map.addControl(nav, 'bottom-right');
+
+        // Add geolocate control to the map
+        let gps = new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true
+            },
+            trackUserLocation: true,
+            showAccuracyCircle: true,
+            showUserLocation: true
+        });
+        map.addControl(gps, 'bottom-right');
+
+        // Add buffer when geolocate
+        function addBuffer() {
+            if (map.getLayer('bufferLayer')) {
+                map.removeLayer('bufferLayer');
+                map.removeSource('bufferLine');
+            }
+
+            var userLocation = [gps._lastKnownPosition.coords.longitude, gps._lastKnownPosition.coords.latitude];
+            var bufferPolygon = turf.buffer(turf.point(userLocation), 5, { units: 'kilometers', steps: 16 });
+
+            var bufferLine = turf.polygonToLine(bufferPolygon);
+
+            // Add buffer line as a source
+            map.addSource('bufferLine', {
+                type: 'geojson',
+                data: bufferLine
+            });
+
+            // Add a line layer for the buffer
+            map.addLayer({
+                id: 'bufferLayer',
+                type: 'line',
+                source: 'bufferLine',
+                layout: {},
+                paint: {
+                    'line-color': '#f58742',     // Color of the line
+                    'line-width': 2,             // Width of the line
+                    'line-dasharray': [2, 1]     // Pattern of dashes and gaps: [dash length, gap length]
+                }
+            });
+
+            map.on('click', 'bufferLayer', function (e) {
+                while (Math.abs(e.lngLat.lng - e.features[0].geometry.coordinates[0]) > 180) {
+                    e.lngLat.lng += e.lngLat.lng > e.features[0].geometry.coordinates[0] ? -360 : 360;
+                }
+
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(`รัศมี 5 กิโลเมตร`)
+                    .addTo(map);
+            });
+
+            map.on('mouseenter', 'bufferLayer', function () {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'bufferLayer', function () {
+                map.getCanvas().style.cursor = '';
+            });
+        }
+
+        function addAqiLayer() {
+            fetch("https://api.waqi.info/v2/map/bounds?latlng=5.5,96.5,21,106&networks=all&token=2b9b7d19f47c41ab2f58a00c0f61315f7a0c5926")
+                .then(response => response.json())
+                .then(async (apiData) => {
+                    let geojson = {
+                        type: 'FeatureCollection',
+                        features: []
+                    };
+
+                    await apiData.data.forEach(e => {
+                        geojson.features.push({
+                            type: 'Feature',
+                            properties: {
+                                aqi: Number(e.aqi),
+                                name: e.station.name,
+                                time: e.station.time,
+                                lat: e.lat,
+                                lng: e.lon
+                            },
+                            geometry: {
+                                type: 'Point',
+                                coordinates: [e.lon, e.lat]
+                            }
+                        });
+                    });
+
+                    map.addSource('aqi', {
+                        type: 'geojson',
+                        data: geojson,
+                    });
+
+                    map.addLayer({
+                        id: 'aqi',
+                        type: 'circle',
+                        source: 'aqi',
+                        layout: {
+                            visibility: 'visible'
+                        },
+                        paint: {
+                            'circle-radius': 7,
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#fff',
+                            'circle-color': [
+                                'case',
+                                ['<=', ['get', 'aqi'], 50], '#00E400',    // Green for AQI 0-50
+                                ['<=', ['get', 'aqi'], 100], '#FFFF00',   // Yellow for AQI 51-100
+                                ['<=', ['get', 'aqi'], 150], '#FF7E00',   // Orange for AQI 101-150
+                                ['<=', ['get', 'aqi'], 200], '#FF0000',   // Red for AQI 151-200
+                                ['<=', ['get', 'aqi'], 300], '#8F3F97',   // Purple for AQI 201-300
+                                '#7E0023'                                      // Maroon for AQI 301-500
+                            ]
+                        },
+                    });
+
+                    // Add click event to the layer
+                    map.on('click', 'aqi', function (e) {
+                        while (Math.abs(e.lngLat.lng - e.features[0].geometry.coordinates[0]) > 180) {
+                            e.lngLat.lng += e.lngLat.lng > e.features[0].geometry.coordinates[0] ? -360 : 360;
+                        }
+
+                        new mapboxgl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setHTML(`พิกัด: ${JSON.stringify(e.features[0].properties.lat)}, ${JSON.stringify(e.features[0].properties.lng)}<br>
+                                       ค่า aqi:  ${JSON.stringify(e.features[0].properties.aqi)}<br>
+                                       วัน/เวลา: ${JSON.stringify(e.features[0].properties.time)}<br>`)
+                            .addTo(map);
+                    });
+
+                    map.on('mouseenter', 'aqi', function () {
+                        map.getCanvas().style.cursor = 'pointer';
+                    });
+
+                    map.on('mouseleave', 'aqi', function () {
+                        map.getCanvas().style.cursor = '';
+                    });
+
+                    addBuffer();
+                })
+                .catch(error => console.log('error', error));
+        }
+
+        gps.on('geolocate', addBuffer);
+        map.on('load', () => {
+            gps.trigger();
+        });
+
+        // add multiple function to map.on('style.load')
+        map.on('style.load', addAqiLayer);
+
+    </script>
+</body>
+
+</html>

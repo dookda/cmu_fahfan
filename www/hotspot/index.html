@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotspot</title>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mitr&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Kanit&display=swap">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+        integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="container-fluid mb-1">
+        <div class="col-12">
+            <div class="row">
+                <table style="width:auto;">
+                    <tr>
+                        <td class="block"><img alt="" id="pictureUrl"></td>
+                        <td class="block">
+                            <h5> <span class="badge bg-light text-dark" id="displayName"></span></h5>
+                            <span id="statusMessage"></span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="map"></div>
+    <div class="container">
+        ข้อมูล hotspot เป็นข้อมูลแบบ near real-time โดยอัพเดทข้อมูลทุก 3 ชั่วโมง ซึ่งถูกบันทึกด้วยระบบ MODIS ของดาวเทียม
+        Aqua (A) และ Terra (T) มีความละเอียดเชิงพื้นที่ 1 km และระบบ VIIRS ของดาวเทียม Suomi NPP (N)
+        มีความละเอียดเชิงพื้นที่ 375 m เวลาที่โคจรผ่านภาคเหนือประเทศไทย Aqua 13.42 น. Terra 10.36 น. Suomi NPP 14.2น.
+    </div>
+
+    <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-body">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <span style="color: aliceblue;">&nbsp;&nbsp; กำลังดาวโหลดข้อมูล...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+        integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js"
+        charset="utf-8"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://momentjs.com/downloads/moment-with-locales.js"></script>
+    <script src="./app.js"></script>
+</body>
+
+</html>
