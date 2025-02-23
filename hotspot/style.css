@@ -1,0 +1,60 @@
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+    font-family: 'Mitr', sans-serif !important;
+}
+
+body {
+    font-family: "Kanit", sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.72222;
+}
+
+body {
+    padding: 0;
+    margin: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+.kanit {
+    font-family: "Kanit", sans-serif !important;
+    font-size: 12px !important;
+}
+
+p.small {
+    line-height: 0.5;
+}
+
+#map {
+    width: 100%;
+    height: 73vh;
+    z-index: 0;
+}
+
+#pictureUrl {
+    width: 50px;
+    border-radius: 5%;
+}
+
+td {
+    border: none;
+}
+
+tr td:last-child {
+    width: 1%;
+    white-space: nowrap;
+}

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>จุดความร้อน</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+</head>
+
+<style>
+    #menu {
+        position: absolute;
+        background: #efefef;
+        padding: 10px;
+        font-family: 'Open Sans', sans-serif;
+        opacity: 0.75;
+    }
+</style>
+
+<body style="margin: 0px; padding: 0px;">
+    <div id="map" style="position: absolute; top: 0px; bottom: 0px; width: 100%;"></div>
+    <div id="menu">
+        <input id="satellite-streets-v12" type="radio" name="rtoggle" value="satellite">
+        <!-- See a list of Mapbox-hosted public styles at -->
+        <!-- https://docs.mapbox.com/api/maps/styles/#mapbox-styles -->
+        <label for="satellite-streets-v12">satellite</label>
+        <input id="light-v11" type="radio" name="rtoggle" value="light">
+        <label for="light-v11">light</label>
+        <input id="dark-v11" type="radio" name="rtoggle" value="dark">
+        <label for="dark-v11">dark</label>
+        <input id="streets-v12" type="radio" name="rtoggle" value="streets" checked>
+        <label for="streets-v12">streets</label>
+        <!-- <input id="outdoors-v12" type="radio" name="rtoggle" value="outdoors">
+        <label for="outdoors-v12">outdoors</label> -->
+    </div>
+
+    <script>
+        mapboxgl.accessToken = "pk.eyJ1IjoiZG9va2RhIiwiYSI6ImNsZmxvenZsYzAzY3IzcW1tZmRyNTZiZDkifQ.m2CpYfFxxSZ0QriDK7s7Dw";
+        const map = new mapboxgl.Map({
+            container: "map",
+            style: 'mapbox://styles/mapbox/streets-v12', // Choose one style
+            zoom: 5,
+            center: [100, 17],
+            pitch: 45
+        });
+
+        // Radio buttons for changing the map style
+        const layerList = document.getElementById('menu');
+        const inputs = layerList.getElementsByTagName('input');
+
+        for (const input of inputs) {
+            input.onclick = (layer) => {
+                const layerId = layer.target.id;
+                map.setStyle('mapbox://styles/mapbox/' + layerId);
+            };
+        }
+
+        // Add zoom and rotation controls to the map
+        let nav = new mapboxgl.NavigationControl({
+            showCompass: true,
+            showZoom: true,
+            visualizePitch: true
+        })
+        map.addControl(nav, 'bottom-right');
+
+        // Add geolocate control to the map
+        let gps = new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true
+            },
+            trackUserLocation: true,
+            showAccuracyCircle: true,
+            showUserLocation: true
+        });
+        map.addControl(gps, 'bottom-right');
+
+        // RainViewer integration
+        function addHotspotLayer() {
+            fetch("https://firms.modaps.eosdis.nasa.gov/mapserver/wfs/SouthEast_Asia/c56f7d70bc06160e3c443a592fd9c87e/?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&TYPENAME=ms:fires_snpp_24hrs&STARTINDEX=0&COUNT=10000&SRSNAME=urn:ogc:def:crs:EPSG::4326&BBOX=-90,-180,90,180,urn:ogc:def:crs:EPSG::4326&outputformat=geojson")
+                .then(res => res.json())
+                .then(apiData => {
+                    map.addSource('hotspot', {
+                        type: 'geojson',
+                        data: apiData,
+                    });
+
+                    map.addLayer(
+                        {
+                            'id': 'hotspot-heat',
+                            'type': 'heatmap',
+                            'source': 'hotspot',
+                            'maxzoom': 8,
+                            'paint': {
+                                // increase weight as diameter breast height increases
+                                'heatmap-weight': {
+                                    'property': 'dbh',
+                                    'type': 'exponential',
+                                    'stops': [
+                                        [1, 0],
+                                        [62, 1]
+                                    ]
+                                },
+                                // increase intensity as zoom level increases
+                                'heatmap-intensity': {
+                                    'stops': [
+                                        [11, 1],
+                                        [15, 3]
+                                    ]
+                                },
+                                // use sequential color palette to use exponentially as the weight increases
+                                'heatmap-color': [
+                                    'interpolate',
+                                    ['linear'],
+                                    ['heatmap-density'],
+                                    0, 'rgba(29,72,119,0)',
+                                    0.2, '#1b8a5a',
+                                    0.4, '#fbb021',
+                                    0.6, '#f68838',
+                                    0.8, '#ee3e32'
+                                ],
+                                // increase radius as zoom increases
+                                'heatmap-radius': {
+                                    'stops': [
+                                        [11, 15],
+                                        [15, 20]
+                                    ]
+                                },
+                                // decrease opacity to transition into the circle layer
+                                'heatmap-opacity': {
+                                    'default': 1,
+                                    'stops': [
+                                        [14, 1],
+                                        [15, 0]
+                                    ]
+                                }
+                            }
+                        },
+                        'waterway-label'
+                    );
+
+                    map.addLayer({
+                        id: 'hotspot-point',
+                        type: 'circle',
+                        source: 'hotspot',
+                        minzoom: 8,
+                        layout: {},
+                        paint: {
+                            'circle-radius': 5,
+                            'circle-color': '#fc0303'
+                        },
+                    });
+
+                    // Add click event to the layer
+                    map.on('click', 'hotspot-point', function (e) {
+                        while (Math.abs(e.lngLat.lng - e.features[0].geometry.coordinates[0]) > 180) {
+                            e.lngLat.lng += e.lngLat.lng > e.features[0].geometry.coordinates[0] ? -360 : 360;
+                        }
+
+                        new mapboxgl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setHTML(`พิกัด: ${JSON.stringify(e.features[0].properties.latitude)}, ${JSON.stringify(e.features[0].properties.longitude)}<br>
+                                       ค่า brightness:  ${JSON.stringify(e.features[0].properties.brightness)}<br>
+                                       วัน/เวลา: ${JSON.stringify(e.features[0].properties.acq_datetime)}<br>`)
+                            .addTo(map);
+                    });
+
+                    // Change the cursor to a pointer when the mouse is over the clusters layer.
+                    map.on('mouseenter', 'hotspot-point', function () {
+                        map.getCanvas().style.cursor = 'pointer';
+                    });
+
+                    // Change it back to a pointer when it leaves.
+                    map.on('mouseleave', 'hotspot-point', function () {
+                        map.getCanvas().style.cursor = '';
+                    });
+
+                    addAqiLayer();
+                })
+                .catch(console.error);
+        }
+
+        function addAqiLayer() {
+            fetch("https://www-old.cmuccdc.org/api2/dustboy/near/18.8029041/98.9502311/")
+                .then(response => response.json())
+                .then(async (apiData) => {
+                    console.log(apiData);
+
+
+
+                    let geojson = {
+                        type: 'FeatureCollection',
+                        features: []
+                    };
+
+                    await apiData.forEach(e => {
+                        geojson.features.push({
+                            type: 'Feature',
+                            properties: {
+                                aqi: Number(e.th_aqi),
+                                name: e.dustboy_name,
+                                time: e.log_datetime,
+                                lat: Number(e.dustboy_lat),
+                                lng: Number(e.dustboy_lon)
+                            },
+                            geometry: {
+                                type: 'Point',
+                                coordinates: [e.dustboy_lon, Number(e.dustboy_lat)]
+                            }
+                        });
+                    });
+
+                    map.addSource('aqi', {
+                        type: 'geojson',
+                        data: geojson,
+                    });
+
+                    map.addLayer({
+                        id: 'aqi',
+                        type: 'circle',
+                        source: 'aqi',
+                        layout: {
+                            visibility: 'visible'
+                        },
+                        paint: {
+                            'circle-radius': 7,
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#fff',
+                            'circle-color': [
+                                'case',
+                                ['<=', ['get', 'aqi'], 50], '#00E400',    // Green for AQI 0-50
+                                ['<=', ['get', 'aqi'], 100], '#FFFF00',   // Yellow for AQI 51-100
+                                ['<=', ['get', 'aqi'], 150], '#FF7E00',   // Orange for AQI 101-150
+                                ['<=', ['get', 'aqi'], 200], '#FF0000',   // Red for AQI 151-200
+                                ['<=', ['get', 'aqi'], 300], '#8F3F97',    // Purple for AQI 201-300
+                                '#7E0023'                                      // Maroon for AQI 301-500
+                            ]
+                        },
+                    });
+
+                    // Add click event to the layer
+                    map.on('click', 'aqi', function (e) {
+                        while (Math.abs(e.lngLat.lng - e.features[0].geometry.coordinates[0]) > 180) {
+                            e.lngLat.lng += e.lngLat.lng > e.features[0].geometry.coordinates[0] ? -360 : 360;
+                        }
+
+                        new mapboxgl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setHTML(`พิกัด: ${JSON.stringify(e.features[0].properties.lat)}, ${JSON.stringify(e.features[0].properties.lng)}<br>
+                                       ค่า aqi:  ${JSON.stringify(e.features[0].properties.aqi)}<br>
+                                       วัน/เวลา: ${JSON.stringify(e.features[0].properties.time)}<br>`)
+                            .addTo(map);
+                    });
+
+                    map.on('mouseenter', 'aqi', function () {
+                        map.getCanvas().style.cursor = 'pointer';
+                    });
+
+                    map.on('mouseleave', 'aqi', function () {
+                        map.getCanvas().style.cursor = '';
+                    });
+                })
+                .catch(error => console.log('error', error));
+        }
+
+        map.on('load', () => {
+            // gps.trigger();
+        });
+
+        map.on('style.load', addHotspotLayer);
+
+    </script>
+</body>
+
+</html>
