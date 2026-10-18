@@ -1,156 +1,78 @@
-:root {
-    --bg: #0f1724;
-    --card: rgba(17, 25, 40, 0.82);
-    --line: rgba(255, 255, 255, 0.12);
-    --text: #e8eef7;
-    --muted: #9aa8bc;
-    --accent: #4fc3f7;
-    --rain: #3b82f6;
-    --warm: #fbbf24;
-    --radius: 14px;
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: 'Mitr', sans-serif !important;
 }
 
-* { box-sizing: border-box; }
+body {
+    font-family: "Kanit",sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.72222;
+}
 
-html, body {
+body {
+    padding: 0;
     margin: 0;
+}
+html, body {
+    width: 100%;
     height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Noto Sans Thai', system-ui, sans-serif;
-    font-size: 14px;
-    overflow: hidden;
 }
 
-#map { position: absolute; inset: 0; }
-
-.card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+.kanit{
+    font-family: "Kanit",sans-serif !important;
+    font-size: 12px !important; 
 }
 
-/* Top bar */
-.topbar {
-    position: absolute;
-    top: 10px; left: 10px;
-    display: flex; align-items: center; gap: 10px;
-    padding: 6px 12px;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    backdrop-filter: blur(10px);
-    z-index: 2;
-}
-.brand { font-weight: 700; font-size: 16px; }
-.brand span { color: var(--accent); }
-.status { color: var(--muted); font-size: 12px; max-width: 46vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* Layers */
-.layers {
-    position: absolute;
-    top: 56px; left: 10px;
-    padding: 8px 12px;
-    width: 250px;
-    z-index: 2;
-}
-.layers summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
-.layers label { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
-.layers .sub { margin-left: 24px; font-size: 12px; color: var(--muted); }
-.layers select {
-    width: calc(100% - 24px);
-    background: #1b2638; color: var(--text);
-    border: 1px solid var(--line); border-radius: 8px; padding: 4px;
-}
-.legend { margin-top: 4px; }
-.legend .bar { height: 8px; border-radius: 4px; }
-.legend .ticks { display: flex; justify-content: space-between; font-size: 11px; }
-
-/* Cloud animation bar */
-.cloudbar {
-    position: absolute;
-    left: 50%; transform: translateX(-50%);
-    bottom: 20px;
-    display: flex; align-items: center; gap: 10px;
-    padding: 6px 12px;
-    width: min(460px, calc(100% - 32px));
-    z-index: 2;
-}
-.cloudbar input[type=range] { flex: 1; accent-color: var(--accent); }
-.frame-time { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; font-size: 12px; }
-.iconbtn {
-    width: 32px; height: 32px; border-radius: 50%;
-    border: none; background: var(--accent); color: #062033;
-    font-size: 14px; cursor: pointer; flex: none;
+p.small {
+    line-height: 0.5;
 }
 
-/* Forecast sheet */
-.sheet {
-    position: absolute;
-    top: 10px; right: 56px; bottom: 80px;
-    width: 340px;
-    padding: 14px 16px;
-    overflow-y: auto;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    backdrop-filter: blur(10px);
-    z-index: 2;
+#map{
+    width: 100%;
+    height: 73vh;
+    z-index: 0;
 }
-.handle { display: none; }
-.now { display: flex; align-items: center; gap: 14px; }
-.now-icon { font-size: 52px; line-height: 1; }
-.now-temp { font-size: 40px; font-weight: 700; line-height: 1.1; }
-.now-desc { color: var(--text); }
-.now-place { color: var(--muted); font-size: 12px; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 4px; }
-.stat { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 6px 8px; }
-.stat b { display: block; font-size: 15px; }
-.stat small { color: var(--muted); font-size: 11px; }
-.sheet h3 { font-size: 13px; color: var(--muted); font-weight: 600; margin: 14px 0 6px; }
-.hourly svg { width: 100%; height: auto; display: block; }
-.daily .row {
-    display: grid; grid-template-columns: 54px 28px 1fr 66px;
-    align-items: center; gap: 6px; padding: 5px 0;
-    border-bottom: 1px solid var(--line);
-}
-.daily .row:last-child { border-bottom: none; }
-.daily .rain { color: var(--accent); font-size: 12px; }
-.daily .temps { text-align: right; font-variant-numeric: tabular-nums; }
-.daily .temps span { color: var(--muted); }
-.credit { color: var(--muted); font-size: 11px; margin-top: 12px; }
-.credit a { color: var(--accent); }
 
-.maplibregl-ctrl-group { background: var(--card) !important; }
-.maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); }
-.maplibregl-ctrl-attrib { font-size: 10px; }
-
-/* Phone layout: forecast becomes a bottom sheet */
-@media (max-width: 720px) {
-    .layers { width: 220px; }
-    .layers:not([open]) { width: auto; }
-    .sheet {
-        top: auto; left: 0; right: 0; bottom: 0;
-        width: 100%;
-        max-height: 55vh;
-        border-radius: var(--radius) var(--radius) 0 0;
-        padding-top: 4px;
-        transition: transform .25s ease;
-    }
-    .sheet.collapsed { transform: translateY(calc(100% - 92px)); overflow: hidden; }
-    .handle {
-        display: block; width: 100%; height: 18px;
-        background: none; border: none; cursor: pointer; position: relative;
-    }
-    .handle::after {
-        content: ""; position: absolute; left: 50%; top: 6px;
-        width: 40px; height: 4px; border-radius: 2px;
-        background: var(--muted); transform: translateX(-50%);
-    }
-    .cloudbar { bottom: calc(55vh + 10px); transition: bottom .25s ease; }
-    body.sheet-collapsed .cloudbar { bottom: 102px; }
-    .now-icon { font-size: 40px; }
-    .now-temp { font-size: 32px; }
+#profile {
+    width: 50px;
+    border-radius: 5%;
 }
+
+/*Legend specific*/
+.legend {
+    padding: 6px 8px;
+    font: 14px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255, 255, 255, 0.7);
+    /*box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);*/
+    border-radius: 5px;
+    line-height: 24px;
+    color: #555;
+}
+.legend h4 {
+    text-align: center;
+    font-size: 16px;
+    margin: 2px 12px 8px;
+    color: #777;
+}
+  
+.legend span {
+    position: relative;
+    bottom: 3px;
+}
+  
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin: 0 8px 0 0;
+    opacity: 0.7;
+}
+  
+.legend i.icon {
+    background-size: 18px;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+  
+
+
+

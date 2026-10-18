@@ -1,124 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 
 <head>
-    <meta charset="utf-8" />
-    <title>เมฆฝน</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ฟ้าฝน 3D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <link href="style.css" rel="stylesheet">
 </head>
 
-<style>
-    #menu {
-        position: absolute;
-        background: #efefef;
-        padding: 10px;
-        font-family: 'Open Sans', sans-serif;
-        opacity: 0.75;
-    }
-</style>
+<body>
+    <div id="map"></div>
 
-<body style="margin: 0px; padding: 0px;">
-    <div id="map" style="position: absolute; top: 0px; bottom: 0px; width: 100%;"></div>
-    <div id="menu">
-        <input id="satellite-streets-v12" type="radio" name="rtoggle" value="satellite-streets-v12">
-        <label for="satellite-streets-v12">satellite</label>
-        <input id="light-v11" type="radio" name="rtoggle" value="light-v11">
-        <label for="light-v11">light</label>
-        <input id="dark-v11" type="radio" name="rtoggle" value="dark-v11">
-        <label for="dark-v11">dark</label>
-        <input id="streets-v12" type="radio" name="rtoggle" value="streets-v12" checked>
-        <label for="streets-v12">streets</label>
-        <!-- <input id="outdoors-v12" type="radio" name="rtoggle" value="outdoors">
-        <label for="outdoors-v12">outdoors</label> -->
+    <header class="topbar">
+        <div class="brand">ฟ้าฝน <span>3D</span></div>
+        <div id="status" class="status">กำลังโหลด…</div>
+    </header>
+
+    <!-- Layer toggles -->
+    <details class="card layers" id="layers" open>
+        <summary>ชั้นข้อมูล</summary>
+        <label><input type="checkbox" id="lyr-cloud" checked> เมฆ Himawari (10 นาที)</label>
+        <label class="sub"><input type="checkbox" id="cloud-raw"> แสดงภาพอินฟราเรดดิบ</label>
+        <label><input type="checkbox" id="lyr-radar"> เรดาร์ฝน (RainViewer)</label>
+        <label><input type="checkbox" id="lyr-grid"> กริดพยากรณ์ 3D (Open-Meteo)</label>
+        <select id="grid-var" class="sub" disabled>
+            <option value="temperature_2m">อุณหภูมิ (°C)</option>
+            <option value="precipitation">ฝนชั่วโมงนี้ (มม.)</option>
+            <option value="cloud_cover">เมฆปกคลุม (%)</option>
+            <option value="relative_humidity_2m">ความชื้น (%)</option>
+        </select>
+        <div id="grid-legend" class="legend sub" hidden></div>
+        <label><input type="checkbox" id="lyr-terrain" checked> ภูมิประเทศ 3D</label>
+        <label><input type="checkbox" id="lyr-sat"> ภาพดาวเทียมพื้นหลัง</label>
+    </details>
+
+    <!-- Cloud animation -->
+    <div class="card cloudbar" id="cloudbar">
+        <button id="play" class="iconbtn" aria-label="เล่น/หยุด">▶</button>
+        <input type="range" id="frame" min="0" max="0" value="0" aria-label="เวลาภาพเมฆ">
+        <div id="frame-time" class="frame-time">--:--</div>
     </div>
 
-    <script>
-        mapboxgl.accessToken = "pk.eyJ1IjoiZG9va2RhIiwiYSI6ImNsZmxvenZsYzAzY3IzcW1tZmRyNTZiZDkifQ.m2CpYfFxxSZ0QriDK7s7Dw";
-        const map = new mapboxgl.Map({
-            container: "map",
-            style: 'mapbox://styles/mapbox/light-v11',
-            zoom: 6,
-            center: [100, 17],
-            pitch: 45
-        });
+    <!-- Forecast panel -->
+    <section class="sheet" id="sheet">
+        <button class="handle" id="sheet-toggle" aria-label="ย่อ/ขยาย"></button>
+        <div class="now">
+            <div class="now-icon" id="now-icon">⏳</div>
+            <div>
+                <div class="now-temp" id="now-temp">--°</div>
+                <div class="now-desc" id="now-desc">แตะแผนที่หรือกดปุ่มหาตำแหน่ง</div>
+                <div class="now-place" id="now-place"></div>
+            </div>
+        </div>
+        <div class="stats" id="stats"></div>
+        <h3>24 ชั่วโมงข้างหน้า</h3>
+        <div id="hourly" class="hourly"></div>
+        <h3>7 วัน</h3>
+        <div id="daily" class="daily"></div>
+        <p class="credit">ข้อมูล: <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> ·
+            Himawari-9 ผ่าน <a href="https://earthdata.nasa.gov/gibs" target="_blank">NASA GIBS</a> ·
+            <a href="https://www.rainviewer.com/" target="_blank">RainViewer</a></p>
+    </section>
 
-        // Radio buttons for changing the map style
-        const layerList = document.getElementById('menu');
-        const inputs = layerList.getElementsByTagName('input');
-
-        for (const input of inputs) {
-            input.onclick = (layer) => {
-                const layerId = layer.target.id;
-
-                console.log(layerId);
-                map.setStyle('mapbox://styles/mapbox/' + layerId);
-            };
-        }
-
-        // Add zoom and rotation controls to the map
-        let nav = new mapboxgl.NavigationControl({
-            showCompass: true,
-            showZoom: true,
-            visualizePitch: true
-        })
-        map.addControl(nav, 'bottom-right');
-
-        // Add geolocate control to the map
-        let gps = new mapboxgl.GeolocateControl({
-            positionOptions: {
-                enableHighAccuracy: true
-            },
-            trackUserLocation: true,
-            showAccuracyCircle: true,
-            showUserLocation: true
-        });
-        map.addControl(gps, 'bottom-right');
-
-        // RainViewer integration
-        function addRainViewerLayer() {
-            fetch("https://api.rainviewer.com/public/weather-maps.json")
-                .then(res => res.json())
-                .then(apiData => {
-                    const latestFrame = apiData.radar.past[apiData.radar.past.length - 1];
-                    const layerId = `rainviewer_${latestFrame.path}`;
-
-                    if (map.getLayer(layerId)) {
-                        // If the layer already exists, update its source instead of re-adding it
-                        // map.getSource(layerId).setData(apiData.host + latestFrame.path + '/256/{z}/{x}/{y}/2/1_1.png');
-                    } else {
-                        map.addLayer({
-                            id: layerId,
-                            type: "raster",
-                            source: {
-                                type: "raster",
-                                tiles: [apiData.host + latestFrame.path + '/256/{z}/{x}/{y}/2/1_1.png'],
-                                tileSize: 256
-                            },
-                            layout: { visibility: "visible" },
-                            minzoom: 0,
-                            maxzoom: 15,
-                            paint: {
-                                'raster-opacity': 0.7
-                            }
-                        });
-                    }
-                })
-                .catch(console.error);
-        }
-
-        // Add initial RainViewer layer & GeoLocate
-        map.on('load', () => {
-            // gps.trigger();  
-            // addRainViewerLayer();
-        });
-
-
-        // Reapply RainViewer layer when the style changes
-        map.on('style.load', addRainViewerLayer);
-
-    </script>
+    <!-- LINE LIFF (app 1654067025-qbv7D0Bn opens this page) -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="app.js"></script>
 </body>
 
 </html>
