@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>เรดาห์ฝน</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+        integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mitr&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Kanit&display=swap">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+    <link rel="stylesheet" href="./style.css">
+
+</head>
+
+<body>
+    <div class="container-fluid mb-1">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-xs-4">
+                    <div id="card">
+                        <img alt="" id="profile">
+                    </div>
+                </div>
+                <div class="col-xs-4 ml-1">
+                    <h5> <span class="badge badge-light" id="displayName"></span></h5>
+                    <span id="statusMessage"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="map"></div>
+    <div class="container-fluid mt-1">
+        <b>ดูเมฆฝน</b> (แหล่งข้อมูล: www.rainviewer.com/)
+        <div class="form-group row">
+            <div class="col-5 p-1">
+                <div class="btn-group ">
+                    <button type="button" class="btn btn-light"
+                        onclick="stop(); showFrame(animationPosition - 1); return;"><i
+                            class="material-icons">fast_rewind</i></button>
+                    <button type="button" class="btn btn-light" onclick="playStop();"><i
+                            class="material-icons">play_circle_filled</i></button>
+                    <button type="button" class="btn btn-light"
+                        onclick="stop(); showFrame(animationPosition + 1); return;"><i
+                            class="material-icons">fast_forward</i></button>
+                </div>
+            </div>
+            <div class="col-7 p-1">
+                <label class="col-12 col-form-label" style="padding-left: 5px; padding-right: 5px;"
+                    id="timestamp"></label>
+            </div>
+        </div>
+
+        <!-- <button type="button" onclick="toggleLegend();">My button</button> -->
+
+        <!-- แหล่งข้อมูล: https://www.rainviewer.com/ -->
+
+    </div>
+</body>
+
+
+<script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+<!-- jQuery library -->
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!-- Popper JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+    integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+<script src="https://momentjs.com/downloads/moment-with-locales.js"></script>
+<script src="./app.js"></script>
+
+</html>
