@@ -1,24 +1,39 @@
 name: Deploy to GitHub Pages
 
+# Publishes the repo root, so pages stay at https://dookda.github.io/cmu_fahfan/www/...
 on:
   push:
     branches:
-      - main  # Change if needed
+      - main
+  workflow_dispatch:
 
 permissions:
-  contents: write  # let GITHUB_TOKEN push to the gh-pages branch
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}  # built-in token, no PAT needed
-          publish_dir: ./www  # Deploy the "www" folder
-          publish_branch: gh-pages
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
